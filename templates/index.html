@@ -1,81 +1,276 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="max-w-4xl mx-auto py-12 px-6">
-    <div class="mb-12 flex justify-between items-end">
-        <div>
-            <h1 class="text-4xl font-extrabold text-gray-900 tracking-tight sm:text-5xl flex items-center">
-                <i data-lucide="zap" class="w-10 h-10 text-blue-600 mr-4"></i>
-                Lead Extraction Hub
-            </h1>
-            <p class="text-xl text-gray-500 mt-2">
-                Automate your outreach by extracting business data straight from Google Maps. 
-            </p>
-        </div>
-        <div class="bg-blue-600 px-6 py-4 rounded-3xl shadow-lg shadow-blue-100 text-white text-center">
-            <div class="text-[10px] font-bold uppercase tracking-widest opacity-80 mb-1">Scraped Today</div>
-            <div class="text-3xl font-black">{{ total_scraped_today }}</div>
-        </div>
+<div class="max-w-[70rem] mx-auto py-8 px-6 font-sans">
+    
+    <div class="mb-8 pl-1">
+        <h1 class="text-3xl lg:text-[2rem] font-medium text-gray-800 tracking-tight">
+            Hello, ColdReached. Glad to see you here!
+        </h1>
     </div>
 
-    <!-- Scrape Controls -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-        <!-- Option 1: Search -->
-        <div class="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 transition-all hover:shadow-md h-full flex flex-col justify-between">
-            <div>
-                <div class="bg-blue-50 w-12 h-12 rounded-2xl flex items-center justify-center mb-6">
-                    <i data-lucide="search" class="w-6 h-6 text-blue-600"></i>
+    <!-- Unified Search Bar -->
+    <form id="search-form" class="relative group mb-10" hx-post="/scrape" hx-target="#scrape-result" hx-indicator="#loading">
+        <div class="flex items-center w-full px-5 py-4 bg-white rounded-xl shadow-sm border border-gray-300 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all shadow-[#0000000a]">
+            <input type="text" id="task-input" name="task_input" placeholder="Search for a task template or input Google Maps URL(s)" 
+                   class="flex-1 bg-transparent border-0 focus:ring-0 outline-none text-gray-800 placeholder-gray-400 font-medium text-[15px] px-2" required>
+            <button type="submit" class="flex items-center text-gray-600 hover:text-gray-900 mx-2 font-medium transition-colors text-[15px]">
+                Start <i data-lucide="arrow-right" class="w-4 h-4 ml-1.5 opacity-60"></i>
+            </button>
+        </div>
+    </form>
+
+    <!-- Scrape Loading & Result Target here before cards so user sees it quickly -->
+    <div id="loading" class="htmx-indicator mb-8 text-center bg-white border border-blue-100 rounded-2xl shadow-sm overflow-hidden animate-in fade-in zoom-in duration-300">
+        <div class="bg-blue-50 px-8 py-5 border-b border-blue-100 flex items-center justify-between">
+            <span class="text-xs font-bold text-blue-500 uppercase tracking-widest flex items-center">
+                <i data-lucide="loader-2" class="animate-spin w-4 h-4 mr-2"></i> Initializing Scraper
+            </span>
+        </div>
+        <div class="p-8">
+            <div class="inline-flex w-20 h-20 rounded-full bg-blue-100 text-blue-600 items-center justify-center mb-4">
+                <i data-lucide="search" class="w-8 h-8 animate-pulse"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 mb-2">Automating Data Extraction</h3>
+            <p class="text-sm text-gray-500 max-w-sm mx-auto">ColdReached is navigating to Google Maps and compiling your target audience...</p>
+        </div>
+    </div>
+    <div id="scrape-result"></div>
+
+    <!-- Layout Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-4">
+        
+        <!-- Left Column: Tasks and Templates Grid -->
+        <div class="lg:col-span-8 space-y-8">
+            <!-- 2 Cards Row -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <!-- Card 1 -->
+                <div class="bg-[#eaf1fb] p-6 rounded-[14px] flex flex-col justify-between h-full border border-blue-50 hover:shadow-md transition-shadow">
+                    <div>
+                         <div class="bg-[#3b82f6] w-10 h-10 rounded-[10px] flex items-center justify-center mb-5 text-white shadow-sm">
+                             <span class="font-extrabold text-[12px] tracking-tight">otd</span>
+                         </div>
+                         <h3 class="text-[16px] font-bold text-gray-900 mb-2">What's a custom task?</h3>
+                         <p class="text-[13px] text-gray-600 mb-6 leading-relaxed opacity-90 font-medium">Auto-detect webpages and set up custom workflows to extract lead data from any Maps query.</p>
+                    </div>
+                    <div class="flex space-x-3 mt-auto">
+                         <button onclick="document.getElementById('task-input').focus()" class="bg-[#4169E1] hover:bg-blue-700 text-white font-medium py-1.5 px-4 rounded md text-[13px] flex items-center transition-all shadow-sm h-8">
+                             <i data-lucide="plus" class="w-3.5 h-3.5 mr-1 text-white/80"></i> New Task
+                         </button>
+                         <button onclick="showComingSoon(); return false;" class="bg-transparent border border-[#4169E1] text-[#4169E1] font-medium py-1.5 px-4 rounded text-[13px] flex items-center hover:bg-blue-50 transition-all h-8">
+                             <i data-lucide="play-circle" class="w-3.5 h-3.5 mr-1 text-[#4169E1]/80"></i> Tutorial
+                         </button>
+                    </div>
                 </div>
-                <h3 class="text-xl font-bold text-gray-900 mb-2">Search by Query</h3>
-                <p class="text-sm text-gray-500 mb-6">Enter a business category and location.</p>
-                <form id="search-form" class="space-y-4" 
-                      hx-post="/scrape" hx-target="#scrape-result" hx-indicator="#loading">
-                    <input type="text" name="keyword" placeholder="e.g., Restaurants" class="w-full px-5 py-3 rounded-2xl border-gray-200 bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none" required>
-                    <input type="text" name="city" placeholder="e.g., Bengaluru" class="w-full px-5 py-3 rounded-2xl border-gray-200 bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none" required>
-                    
-                    <button type="submit" 
-                            class="mt-6 w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-extrabold py-4 rounded-2xl shadow-[0_0_20px_rgba(59,130,246,0.6)] transition-all flex items-center justify-center">
-                        <i data-lucide="play" class="w-4 h-4 mr-2"></i>
-                        Start Search
+
+                <!-- Card 2 -->
+                <div class="bg-[#efeaf6] p-6 rounded-[14px] flex flex-col justify-between h-full border border-purple-50 hover:shadow-md transition-shadow">
+                    <div>
+                         <div class="relative w-10 h-10 mb-5 text-white flex items-center justify-center">
+                             <!-- Fake icon geometry -->
+                             <div class="absolute w-6 h-6 rounded-full bg-blue-500 top-0 right-1 border border-[#efeaf6] z-10"></div>
+                             <div class="absolute w-5 h-5 bg-yellow-400 rounded-sm top-3 left-0 border border-[#efeaf6] z-20"></div>
+                             <div class="absolute w-6 h-6 bg-red-500 rounded-sm bottom-0 right-3 rotate-12 border border-[#efeaf6] z-0"></div>
+                         </div>
+                         <h3 class="text-[16px] font-bold text-gray-900 mb-2">What's a task template?</h3>
+                         <p class="text-[13px] text-gray-600 mb-6 leading-relaxed opacity-90 font-medium">Choose from a selection of B2B task templates and get localized Maps lead data instantly.</p>
+                    </div>
+                    <div class="flex space-x-3 mt-auto">
+                         <button onclick="showComingSoon(); return false;" class="bg-[#5c4ae4] hover:bg-indigo-700 text-white font-medium py-1.5 px-3 rounded text-[13px] flex items-center transition-all shadow-sm h-8">
+                             <i data-lucide="layout-grid" class="w-3.5 h-3.5 mr-1 text-white/80"></i> Templates
+                         </button>
+                         <button onclick="showComingSoon(); return false;" class="bg-transparent border border-[#5c4ae4] text-[#5c4ae4] font-medium py-1.5 px-3 rounded text-[13px] flex items-center hover:bg-indigo-50 transition-all h-8">
+                             <i data-lucide="play-circle" class="w-3.5 h-3.5 mr-1 text-[#5c4ae4]/80"></i> Tutorial
+                         </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Popular Templates section -->
+            <div class="mt-10">
+                <div class="flex justify-between items-center mb-5 pr-2">
+                    <div class="flex items-center space-x-6 text-[14px]">
+                        <span class="font-bold text-gray-900 border-b-2 border-gray-900 pb-1 cursor-default">Popular Templates</span>
+                        <span onclick="showComingSoon()" class="text-gray-400 hover:text-gray-900 cursor-pointer font-medium pb-1">Agencies</span>
+                        <span onclick="showComingSoon()" class="text-gray-400 hover:text-gray-900 cursor-pointer font-medium pb-1">Real Estate</span>
+                        <span onclick="showComingSoon()" class="text-gray-400 hover:text-gray-900 cursor-pointer font-medium pb-1 hidden sm:inline">Stores</span>
+                        <span onclick="showComingSoon()" class="text-gray-400 hover:text-gray-900 cursor-pointer font-medium pb-1 hidden md:inline">Maps</span>
+                    </div>
+                    <button onclick="showComingSoon(); return false;" class="text-gray-500 hover:text-gray-900 text-[13px] font-medium flex items-center">
+                        See All <i data-lucide="chevron-right" class="w-3 h-3 ml-0.5 opacity-60"></i>
                     </button>
-                </form>
+                </div>
+
+                <!-- Templates Grid rows -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-7 pl-1">
+                    
+                    <!-- T1 -->
+                    <div onclick="document.getElementById('task-input').value='Coffee shops in Seattle'; document.getElementById('search-form').requestSubmit();" 
+                         class="group flex items-start cursor-pointer">
+                        <div class="w-11 h-11 bg-white rounded-lg flex items-center justify-center mr-3 mt-1 shadow-sm border border-gray-100 group-hover:shadow-md transition-shadow">
+                            <span class="w-6 h-6 rounded-full bg-[#1da0f2] text-white flex items-center justify-center font-bold text-[10px]">C</span>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-800 text-[15px] group-hover:text-blue-600 transition-colors">Coffee Shops_Seattle</h4>
+                            <div class="flex items-center text-[12px] text-gray-400 mt-1 font-medium">
+                                Maps <span class="mx-1">|</span> <i data-lucide="thumbs-up" class="w-3 h-3 mr-1 opacity-70"></i> 1,620
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- T2 -->
+                    <div onclick="document.getElementById('task-input').value='Marketing Agencies in London'; document.getElementById('search-form').requestSubmit();" 
+                         class="group flex items-start cursor-pointer">
+                        <div class="w-11 h-11 bg-white rounded-lg flex items-center justify-center mr-3 mt-1 shadow-sm border border-gray-100 group-hover:shadow-md transition-shadow">
+                            <span class="w-6 h-6 rounded-full bg-[#fa7b17] text-white flex items-center justify-center font-bold text-xs">M</span>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-800 text-[15px] group-hover:text-blue-600 transition-colors">Marketing Agencies_London</h4>
+                            <div class="flex items-center text-[12px] text-gray-400 mt-1 font-medium">
+                                Agencies <span class="mx-1">|</span> <i data-lucide="thumbs-up" class="w-3 h-3 mr-1 opacity-70"></i> 582
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- T3 -->
+                    <div onclick="document.getElementById('task-input').value='Real Estate Brokers in Miami'; document.getElementById('search-form').requestSubmit();" 
+                         class="group flex items-start cursor-pointer">
+                        <div class="w-11 h-11 bg-white rounded-lg flex items-center justify-center mr-3 mt-1 shadow-sm border border-gray-100 group-hover:shadow-md transition-shadow">
+                            <span class="w-6 h-6 rounded-full bg-[#1b9a59] text-white flex items-center justify-center font-bold text-xs">R</span>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-800 text-[15px] group-hover:text-blue-600 transition-colors">Real Estate_Miami</h4>
+                            <div class="flex items-center text-[12px] text-gray-400 mt-1 font-medium">
+                                Properties <span class="mx-1">|</span> <i data-lucide="thumbs-up" class="w-3 h-3 mr-1 opacity-70"></i> 546
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- T4 -->
+                    <div onclick="document.getElementById('task-input').value='Plumbers in Chicago'; document.getElementById('search-form').requestSubmit();" 
+                         class="group flex items-start cursor-pointer">
+                        <div class="w-11 h-11 bg-white rounded-lg flex items-center justify-center mr-3 mt-1 shadow-sm border border-gray-100 group-hover:shadow-md transition-shadow">
+                            <span class="w-6 h-6 rounded-full bg-[#ea4335] text-white flex items-center justify-center font-bold text-[10px]">P</span>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-800 text-[15px] group-hover:text-blue-600 transition-colors">Local Plumbers_Chicago</h4>
+                            <div class="flex items-center text-[12px] text-gray-400 mt-1 font-medium">
+                                Local SEO <span class="mx-1">|</span> <i data-lucide="thumbs-up" class="w-3 h-3 mr-1 opacity-70"></i> 518
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Option 2: URL -->
-        <div class="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 transition-all hover:shadow-md h-full flex flex-col justify-between">
-            <div>
-                <div class="bg-blue-50 w-12 h-12 rounded-2xl flex items-center justify-center mb-6">
-                    <i data-lucide="link" class="w-6 h-6 text-blue-600"></i>
+        <!-- Right Column: Banner and Resources -->
+        <div class="lg:col-span-4 lg:pl-4 space-y-6">
+            <!-- Banner card -->
+            <div onclick="showComingSoon()" class="bg-gradient-to-br from-[#bccae9] to-[#d8e0f5] p-5 rounded-[12px] relative overflow-hidden group cursor-pointer border border-[#bccae9]/50 shadow-sm">
+                <h3 class="text-[#132c66] font-bold text-[17px] mb-1 relative z-10 w-4/5 leading-snug">Easy Web Scraping<br>for <span class="text-[#2563eb]">Anyone</span></h3>
+                <p class="text-[#132c66]/70 text-[11px] font-semibold mb-6 relative z-10">Learn ColdReached within minutes</p>
+                <div class="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/40 border border-white/50 flex items-center justify-center text-[#2563eb] z-10 group-hover:bg-white transition-all shadow-sm backdrop-blur-sm">
+                    <i data-lucide="play" class="w-4 h-4 ml-0.5 fill-current"></i>
                 </div>
-                <h3 class="text-xl font-bold text-gray-900 mb-2">Paste Maps URL</h3>
-                <p class="text-sm text-gray-500 mb-6">Extract from a specific Google Maps search result URL.</p>
-                <form id="url-form" class="space-y-4"
-                      hx-post="/scrape" hx-target="#scrape-result" hx-indicator="#loading">
-                    <input type="url" name="url" placeholder="https://www.google.com/maps/search/..." class="w-full px-5 py-3 rounded-2xl border-gray-200 bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none" required>
-                    
-                    <button type="submit" 
-                            class="mt-6 w-full bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white font-extrabold py-4 rounded-2xl shadow-[0_0_20px_rgba(59,130,246,0.6)] transition-all flex items-center justify-center">
-                        <i data-lucide="zap" class="w-4 h-4 mr-2"></i>
-                        Extract from URL
-                    </button>
-                </form>
+                
+                <!-- Abstract background shape -->
+                <div class="absolute -bottom-10 -right-6 w-32 h-32 bg-white/30 rounded-full blur-xl pointer-events-none"></div>
+                <div class="absolute top-0 right-10 w-16 h-full bg-white/10 -skew-x-12 pointer-events-none"></div>
             </div>
-        </div>
-    </div>
 
-    <!-- Status & Results -->
-    <div class="mt-8">
-        <div id="loading" class="htmx-indicator mb-6 text-center">
-            <div class="inline-flex items-center px-6 py-3 font-semibold leading-6 text-blue-600 bg-blue-50 rounded-2xl transition ease-in-out duration-150 cursor-not-allowed">
-                <i data-lucide="loader-2" class="animate-spin w-5 h-5 mr-3"></i>
-                Scraping Google Maps... This may take a minute.
+            <!-- Walkthrough Card -->
+            <div class="bg-[#f9f9fa] p-5 rounded-[12px] border border-gray-100 font-sans shadow-[0_2px_4px_rgba(0,0,0,0.01)]">
+                <h3 class="text-gray-800 font-bold text-[15px] mb-1">Basic Walkthrough</h3>
+                <p class="text-gray-500 text-[13px] mb-5 font-medium leading-relaxed">Get oriented with a step-by-step demo.</p>
+                <div class="flex space-x-6 text-[13px] font-medium text-blue-500">
+                    <a href="#" onclick="showComingSoon(); return false;" class="hover:text-blue-700 transition">Let's go!</a>
+                    <a href="/businesses" class="hover:text-blue-700 transition">Task List</a>
+                </div>
+            </div>
+
+            <!-- Resources list -->
+            <div class="pt-2">
+                <h3 class="text-gray-900 font-bold text-[15px] mb-4 pl-1">Resources</h3>
+                
+                <div class="flex justify-between mb-6 text-center px-4">
+                    <div onclick="showComingSoon()" class="cursor-pointer group flex flex-col items-center">
+                        <div class="w-9 h-9 rounded-full bg-[#1b9a59] flex items-center justify-center mb-1.5 shadow-sm group-hover:-translate-y-1 transition-transform">
+                            <i data-lucide="help-circle" class="w-4 h-4 text-white"></i>
+                        </div>
+                        <span class="text-[12px] font-medium text-gray-700">FAQ</span>
+                    </div>
+                    <div onclick="showComingSoon()" class="cursor-pointer group flex flex-col items-center">
+                        <div class="w-9 h-9 rounded-full bg-[#2563eb] flex items-center justify-center mb-1.5 shadow-sm group-hover:-translate-y-1 transition-transform">
+                            <i data-lucide="video" class="w-4 h-4 text-white"></i>
+                        </div>
+                        <span class="text-[12px] font-medium text-gray-700">Video</span>
+                    </div>
+                    <div onclick="showComingSoon()" class="cursor-pointer group flex flex-col items-center">
+                        <div class="w-9 h-9 rounded-full bg-[#fbbc05] flex items-center justify-center mb-1.5 shadow-sm group-hover:-translate-y-1 transition-transform">
+                            <i data-lucide="play" class="w-4 h-4 text-white translate-x-0.5"></i>
+                        </div>
+                        <span class="text-[12px] font-medium text-gray-700">Case</span>
+                    </div>
+                </div>
+
+                <!-- List items -->
+                <div class="space-y-2">
+                    <div onclick="showComingSoon()" class="bg-[#f9f9fa] hover:bg-gray-100 cursor-pointer p-3 rounded-lg transition-colors border-l-2 border-transparent">
+                        <p class="text-[13px] font-medium text-gray-700 flex items-center">
+                            <span class="font-bold mr-1">【Tutorial】</span> ColdReached 101
+                        </p>
+                    </div>
+                    <div onclick="showComingSoon()" class="hover:bg-[#f9f9fa] cursor-pointer p-3 rounded-lg transition-colors border-l-2 border-transparent">
+                        <p class="text-[13px] font-medium text-gray-700 flex items-center">
+                            <span class="font-bold mr-1">【Tutorial】</span> XPaths Beginners' Guide
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
         
-        <div id="scrape-result">
-            <!-- Scrape success/error messages will appear here -->
-        </div>
     </div>
 </div>
 
+<script>
+    function showComingSoon() {
+        // Create unique ID for the toast
+        const toastId = 'toast-' + Math.random().toString(36).substr(2, 9);
+        
+        // HTML structure for the toast
+        const toastHTML = `
+            <div id="${toastId}" class="fixed bottom-6 right-6 bg-gray-900 text-white px-5 py-3 rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.2)] flex items-center transform transition-all duration-300 translate-y-12 opacity-0 z-[100]">
+                <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center mr-3">
+                    <i data-lucide="clock" class="w-4 h-4 text-blue-400"></i>
+                </div>
+                <div>
+                    <h4 class="font-bold text-sm tracking-tight">Coming Soon</h4>
+                    <p class="text-xs text-gray-400">This feature will be available in the next update.</p>
+                </div>
+            </div>
+        `;
+        
+        // Append to body
+        document.body.insertAdjacentHTML('beforeend', toastHTML);
+        
+        // Initialize lucide icon strictly for the new HTML
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+        
+        const toast = document.getElementById(toastId);
+        
+        // Animate in
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                toast.classList.remove('translate-y-12', 'opacity-0');
+            }, 10);
+        });
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            toast.classList.add('translate-y-12', 'opacity-0');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+</script>
 {% endblock %}

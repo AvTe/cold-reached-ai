@@ -13,6 +13,7 @@ class Business(db.Model):
     rating = db.Column(db.Float)
     has_email = db.Column(db.Boolean, default=False)
     scraped_at = db.Column(db.DateTime, default=datetime.utcnow)
+    label = db.Column(db.String(100), nullable=True)
     
     # Relationship to emails
     emails = db.relationship('Email', backref='business', lazy=True)

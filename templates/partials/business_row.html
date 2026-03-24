@@ -1,0 +1,93 @@
+<div id="business-row-{{ b.id }}" class="group bg-white rounded-[1.5rem] p-5 shadow-sm border border-gray-100 flex flex-wrap lg:flex-nowrap items-center hover:shadow-lg hover:border-blue-100 hover:-translate-y-0.5 transition-all duration-300">
+                
+    <!-- Checkbox -->
+    <div class="pl-2 pr-6">
+        <input type="checkbox" name="selected_ids" value="{{ b.id }}" class="row-checkbox w-5 h-5 rounded border-gray-200 text-blue-600 focus:ring-blue-500 cursor-pointer shadow-sm">
+    </div>
+
+    <!-- Icon + Name -->
+    <div class="flex items-center w-full lg:w-3/12 pr-4 mb-4 lg:mb-0">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center mr-4 flex-shrink-0 
+                {% if b.rating >= 4.5 %}bg-emerald-50 text-emerald-600
+                {% elif b.rating >= 3.5 %}bg-blue-50 text-blue-600
+                {% else %}bg-gray-50 text-gray-500{% endif %}">
+            <i data-lucide="store" class="w-6 h-6"></i>
+        </div>
+        <div class="min-w-0">
+            <h3 class="font-bold text-gray-900 text-[15px] truncate" title="{{ b.name }}">{{ b.name }}</h3>
+            <div class="flex items-center text-xs text-gray-400 mt-1 font-medium">
+                <i data-lucide="star" class="w-3 h-3 fill-current text-amber-500 mr-1.5 object-cover"></i> 
+                {{ b.rating or 'No Rating' }}
+                
+                <!-- Display Label if exists -->
+                {% if b.label %}
+                <span class="ml-3 px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-md font-bold text-[10px] tracking-wide uppercase border border-indigo-100 flex items-center">
+                    <i data-lucide="tag" class="w-3 h-3 mr-1"></i> {{ b.label }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Address -->
+    <div class="w-full lg:w-4/12 px-4 mb-4 lg:mb-0 flex items-center border-l border-r border-transparent lg:border-gray-50">
+        <div class="min-w-0">
+            <div class="text-sm text-gray-700 font-medium truncate w-[280px]" title="{{ b.address }}">{{ b.address }}</div>
+            <div class="text-xs text-gray-400 mt-1 uppercase tracking-wider font-bold">Location Data</div>
+        </div>
+    </div>
+
+    <!-- Status/Website -->
+    <div class="w-full lg:w-2/12 px-4 mb-4 lg:mb-0">
+        {% if b.has_email %}
+        <span class="inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs font-bold bg-green-50 text-green-700 border border-green-100 mb-1">
+            <i data-lucide="check-circle-2" class="w-3.5 h-3.5 mr-1.5"></i> Details Found
+        </span>
+        {% else %}
+        <span class="inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs font-bold bg-amber-50 text-amber-700 border border-amber-100 mb-1">
+            <i data-lucide="search" class="w-3.5 h-3.5 mr-1.5"></i> Discovery Pending
+        </span>
+        {% endif %}
+        
+        <div class="text-[11px] font-bold mt-1 truncate">
+            {% if b.website %}
+            <a href="{{ b.website }}" target="_blank" class="text-blue-600 hover:text-blue-800 flex items-center">
+                <i data-lucide="external-link" class="w-3 h-3 mr-1"></i> Site Linked
+            </a>
+            {% else %}
+            <span class="text-gray-400 flex items-center"><i data-lucide="unlink" class="w-3 h-3 mr-1"></i> No URL detected</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Action Icons -->
+    <div class="w-full lg:w-3/12 flex items-center lg:justify-end space-x-2.5 px-2">
+        <!-- Direct Call -->
+        <a href="{% if b.phone %}tel:{{ b.phone|replace(' ', '') }}{% else %}#{% endif %}" 
+            title="{% if b.phone %}Call {{ b.phone }}{% else %}No phone number{% endif %}" 
+            class="w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 border 
+                    {% if b.phone %}bg-gray-50 border-gray-100 text-gray-600 hover:bg-teal-50 hover:text-teal-600 hover:border-teal-200{% else %}bg-gray-50/50 border-gray-50 text-gray-300 cursor-not-allowed{% endif %}">
+            <i data-lucide="phone-call" class="w-5 h-5"></i>
+        </a>
+        
+        <!-- Quick Request Email -->
+        {% if b.has_email %}
+        <a href="/preview" title="Draft AI Pitch" class="flex-1 lg:flex-none h-12 px-4 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 hover:bg-blue-600 hover:text-white flex items-center justify-center transition-all shadow-sm font-bold text-sm">
+            <i data-lucide="mail-plus" class="w-4 h-4 mr-2"></i> Draft
+        </a>
+        {% else %}
+        <!-- In-line search button -->
+        <button type="button" hx-post="/find-emails" hx-vals='{"business_id": {{ b.id }}}' hx-target="#business-row-{{ b.id }}" hx-swap="outerHTML" hx-indicator="#find-loading"
+                title="Find Email for this lead" class="flex-1 lg:flex-none h-12 px-4 rounded-xl bg-gray-50 text-gray-600 border border-gray-100 hover:bg-gray-900 hover:text-white flex items-center justify-center transition-all shadow-sm font-bold text-sm whitespace-nowrap">
+            <i data-lucide="search-check" class="w-4 h-4 mr-2"></i> Find
+        </button>
+        {% endif %}
+
+        <!-- Individual Remove -->
+        <button type="button" hx-delete="/delete/{{ b.id }}" hx-target="#business-row-{{ b.id }}" hx-swap="outerHTML" 
+                title="Remove Lead entirely" class="w-12 h-12 rounded-xl bg-white border border-gray-200 text-gray-400 hover:bg-red-50 hover:text-red-600 hover:border-red-200 flex items-center justify-center transition-all">
+            <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+    </div>
+
+</div>

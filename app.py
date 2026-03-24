@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response
 from config import Config
 from models import db, Business, Email, SendLog
 import os
@@ -31,6 +31,10 @@ def scrape():
     city = data.get('city')
     maps_url = data.get('url')
     
+    # Validation
+    if not maps_url and not (keyword and city):
+        return f'<div class="p-6 bg-red-50 text-red-600 rounded-2xl border border-red-100 font-bold flex items-center"><i data-lucide="alert-circle" class="w-5 h-5 mr-3"></i> Error: Please provide either a Maps URL or both Keyword and City.</div>', 200
+
     query = f"{keyword} in {city}" if keyword and city else None
     
     try:
@@ -62,8 +66,10 @@ def find_emails():
             business = Business.query.get(business_id)
             business.has_email = True
             db.session.commit()
+            return render_template('partials/business_row.html', b=business)
             
-        return f'<div class="p-4 bg-green-50 text-green-700 rounded-xl border border-green-100 font-bold flex items-center text-xs"><i data-lucide="check" class="w-3 h-3 mr-2"></i> Found {len(found)} emails for business #{business_id}</div>'
+        business = Business.query.get(business_id)
+        return render_template('partials/business_row.html', b=business)
     else:
         # Find for all businesses without email (limit to 10 for safety)
         tobefound = Business.query.filter_by(has_email=False).filter(Business.website != "").limit(10).all()
@@ -91,6 +97,86 @@ def generate_email(email_id):
     success = write_email_content(email_id, app)
     email_obj = Email.query.get(email_id)
     return render_template('partials/email_card.html', email=email_obj)
+
+@app.route('/delete/<int:business_id>', methods=['DELETE', 'POST'])
+def delete_business(business_id):
+    b = Business.query.get(business_id)
+    if b:
+        Email.query.filter_by(business_id=b.id).delete()
+        db.session.delete(b)
+        db.session.commit()
+    return ""
+
+@app.route('/label/<int:business_id>', methods=['POST'])
+def label_business(business_id):
+    b = Business.query.get(business_id)
+    if b:
+        label = request.form.get('label')
+        b.label = label
+        db.session.commit()
+    return render_template('businesses.html', businesses=Business.query.order_by(Business.scraped_at.desc()).all())
+
+@app.route('/export/csv')
+def export_csv():
+    import csv
+    from io import StringIO
+    si = StringIO()
+    cw = csv.writer(si)
+    cw.writerow(['ID', 'Name', 'Address', 'Phone', 'Website', 'Rating', 'Email Found', 'Label', 'Scraped At'])
+    
+    businesses = Business.query.order_by(Business.scraped_at.desc()).all()
+    for b in businesses:
+        cw.writerow([
+            b.id, b.name, b.address, b.phone, b.website, b.rating,
+            'Yes' if b.has_email else 'No', b.label or '',
+            b.scraped_at.strftime('%Y-%m-%d %H:%M:%S') if b.scraped_at else ''
+        ])
+    
+    return Response(
+        si.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-disposition": "attachment; filename=leads_export.csv"}
+    )
+
+@app.route('/export/json')
+def export_json():
+    import json
+    businesses = Business.query.order_by(Business.scraped_at.desc()).all()
+    out = []
+    for b in businesses:
+        out.append({
+            'id': b.id, 'name': b.name, 'address': b.address,
+            'phone': b.phone, 'website': b.website, 'rating': b.rating,
+            'has_email': b.has_email, 'label': b.label,
+            'scraped_at': b.scraped_at.strftime('%Y-%m-%d %H:%M:%S') if b.scraped_at else None
+        })
+    return Response(
+        json.dumps(out, indent=4),
+        mimetype="application/json",
+        headers={"Content-disposition": "attachment; filename=leads_export.json"}
+    )
+
+@app.route('/bulk-action', methods=['POST'])
+def bulk_action():
+    action = request.form.get('action')
+    selected_ids = request.form.getlist('selected_ids')
+    
+    if action == 'delete':
+        for bid in selected_ids:
+            b = Business.query.get(bid)
+            if b:
+                Email.query.filter_by(business_id=b.id).delete()
+                db.session.delete(b)
+        db.session.commit()
+    elif action == 'label':
+        new_label = request.form.get('bulk_label')
+        for bid in selected_ids:
+            b = Business.query.get(bid)
+            if b:
+                b.label = new_label
+        db.session.commit()
+    
+    return redirect(url_for('businesses'))
 
 @app.route('/preview')
 def preview():

@@ -27,16 +27,28 @@ def index():
 def scrape():
     """Trigger Scrape via AJAX/HTMX"""
     data = request.get_json(silent=True) or request.form or {}
-    keyword = data.get('keyword')
-    city = data.get('city')
-    maps_url = data.get('url')
+    task_input = data.get('task_input', '').strip()
     
-    # Validation
-    if not maps_url and not (keyword and city):
-        return f'<div class="p-6 bg-red-50 text-red-600 rounded-2xl border border-red-100 font-bold flex items-center"><i data-lucide="alert-circle" class="w-5 h-5 mr-3"></i> Error: Please provide either a Maps URL or both Keyword and City.</div>', 200
+    # Fallback to older form data if accessed directly
+    if not task_input:
+        keyword = data.get('keyword')
+        city = data.get('city')
+        url_input = data.get('url')
+        if url_input:
+            task_input = url_input
+        elif keyword and city:
+            task_input = f"{keyword} in {city}"
+    
+    if not task_input:
+        return f'<div class="p-6 bg-red-50 text-red-600 rounded-2xl border border-red-100 font-bold flex items-center"><i data-lucide="alert-circle" class="w-5 h-5 mr-3"></i> Error: Please provide a valid search query or Maps URL.</div>', 200
 
-    query = f"{keyword} in {city}" if keyword and city else None
-    
+    if task_input.startswith('http') or task_input.startswith('www.'):
+        maps_url = task_input
+        query = None
+    else:
+        maps_url = None
+        query = task_input
+        
     try:
         # Run async scraper synchronously for the request
         scraped_data = asyncio.run(scrape_google_maps(search_query=query, url=maps_url, max_results=10))
@@ -116,66 +128,110 @@ def label_business(business_id):
         db.session.commit()
     return render_template('businesses.html', businesses=Business.query.order_by(Business.scraped_at.desc()).all())
 
-@app.route('/export/csv')
-def export_csv():
-    import csv
-    from io import StringIO
-    si = StringIO()
-    cw = csv.writer(si)
-    cw.writerow(['ID', 'Name', 'Address', 'Phone', 'Website', 'Rating', 'Email Found', 'Label', 'Scraped At'])
+def generate_export_file(action, businesses):
+    if action == 'export_csv':
+        import csv
+        from io import BytesIO, TextIOWrapper
+        si = BytesIO()
+        si.write(b'\xef\xbb\xbf') # UTF-8 BOM
+        wrapper = TextIOWrapper(si, encoding='utf-8', newline='')
+        cw = csv.writer(wrapper)
+        cw.writerow(['ID', 'Name', 'Phone', 'Email', 'Website', 'Address', 'Rating', 'Label', 'Scraped At'])
+        for b in businesses:
+            emails = ", ".join([e.email for e in b.emails]) if b.emails else "N/A"
+            cw.writerow([b.id, b.name, b.phone, emails, b.website, b.address, b.rating, b.label or '', b.scraped_at.strftime('%Y-%m-%d %H:%M') if b.scraped_at else ''])
+        wrapper.flush()
+        return Response(si.getvalue(), mimetype="text/csv", headers={"Content-disposition": "attachment; filename=leads_export.csv"})
     
-    businesses = Business.query.order_by(Business.scraped_at.desc()).all()
-    for b in businesses:
-        cw.writerow([
-            b.id, b.name, b.address, b.phone, b.website, b.rating,
-            'Yes' if b.has_email else 'No', b.label or '',
-            b.scraped_at.strftime('%Y-%m-%d %H:%M:%S') if b.scraped_at else ''
-        ])
+    elif action == 'export_json':
+        import json
+        out = []
+        for b in businesses:
+            emails = [e.email for e in b.emails] if b.emails else []
+            out.append({'id': b.id, 'name': b.name, 'phone': b.phone, 'emails': emails, 'website': b.website, 'address': b.address, 'rating': b.rating, 'label': b.label, 'scraped_at': b.scraped_at.strftime('%Y-%m-%d %H:%M') if b.scraped_at else None})
+        return Response(json.dumps(out, indent=4), mimetype="application/json", headers={"Content-disposition": "attachment; filename=leads_export.json"})
     
-    return Response(
-        si.getvalue(),
-        mimetype="text/csv",
-        headers={"Content-disposition": "attachment; filename=leads_export.csv"}
-    )
+    elif action == 'export_excel':
+        import openpyxl
+        from io import BytesIO
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Leads"
+        ws.append(['ID', 'Name', 'Phone', 'Email', 'Website', 'Address', 'Rating', 'Label', 'Scraped At'])
+        for b in businesses:
+            emails = ", ".join([e.email for e in b.emails]) if b.emails else "N/A"
+            ws.append([b.id, b.name, b.phone, emails, b.website, b.address, b.rating, b.label or '', b.scraped_at.strftime('%Y-%m-%d %H:%M') if b.scraped_at else ''])
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+        return Response(output.getvalue(), mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-disposition": "attachment; filename=leads_export.xlsx"})
+    
+    elif action == 'export_pdf':
+        from reportlab.lib.pagesizes import landscape, letter
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+        from reportlab.lib.styles import getSampleStyleSheet
+        from reportlab.lib import colors
+        from io import BytesIO
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=landscape(letter))
+        elements = []
+        styles = getSampleStyleSheet()
+        styleN = styles["Normal"]
+        data = [['Name', 'Phone', 'Email', 'Website', 'Label']]
+        for b in businesses:
+            emails = ", ".join([e.email for e in b.emails]) if b.emails else "N/A"
+            data.append([Paragraph(b.name or '', styleN), b.phone or 'N/A', Paragraph(emails, styleN), Paragraph(b.website or 'N/A', styleN), b.label or 'None'])
+        t = Table(data, colWidths=[180, 100, 150, 150, 80])
+        t.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#2563eb')),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+            ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('BOTTOMPADDING', (0,0), (-1,0), 12),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e5e7eb')),
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ]))
+        elements.append(t)
+        doc.build(elements)
+        buffer.seek(0)
+        return Response(buffer.getvalue(), mimetype="application/pdf", headers={"Content-disposition": "attachment; filename=leads_export.pdf"})
+        
+    return redirect(url_for('businesses'))
 
-@app.route('/export/json')
-def export_json():
-    import json
+@app.route('/export/<format_type>')
+def export_general(format_type):
+    # Route for the global header export buttons (Exports all)
     businesses = Business.query.order_by(Business.scraped_at.desc()).all()
-    out = []
-    for b in businesses:
-        out.append({
-            'id': b.id, 'name': b.name, 'address': b.address,
-            'phone': b.phone, 'website': b.website, 'rating': b.rating,
-            'has_email': b.has_email, 'label': b.label,
-            'scraped_at': b.scraped_at.strftime('%Y-%m-%d %H:%M:%S') if b.scraped_at else None
-        })
-    return Response(
-        json.dumps(out, indent=4),
-        mimetype="application/json",
-        headers={"Content-disposition": "attachment; filename=leads_export.json"}
-    )
+    action = f'export_{format_type}'
+    return generate_export_file(action, businesses)
 
 @app.route('/bulk-action', methods=['POST'])
 def bulk_action():
     action = request.form.get('action')
     selected_ids = request.form.getlist('selected_ids')
     
+    if action and action.startswith('export_') and not selected_ids:
+        # Fallback to export all if attempted via dropdown with no selections
+        businesses = Business.query.order_by(Business.scraped_at.desc()).all()
+    else:
+        businesses = Business.query.filter(Business.id.in_(selected_ids)).order_by(Business.scraped_at.desc()).all() if selected_ids else []
+    
+    if action and action.startswith('export_'):
+        return generate_export_file(action, businesses)
+        
     if action == 'delete':
-        for bid in selected_ids:
-            b = Business.query.get(bid)
-            if b:
-                Email.query.filter_by(business_id=b.id).delete()
-                db.session.delete(b)
+        if not selected_ids: return redirect(url_for('businesses'))
+        for b in businesses:
+            Email.query.filter_by(business_id=b.id).delete()
+            db.session.delete(b)
         db.session.commit()
     elif action == 'label':
+        if not selected_ids: return redirect(url_for('businesses'))
         new_label = request.form.get('bulk_label')
-        for bid in selected_ids:
-            b = Business.query.get(bid)
-            if b:
-                b.label = new_label
+        for b in businesses:
+            b.label = new_label
         db.session.commit()
-    
+        
     return redirect(url_for('businesses'))
 
 @app.route('/preview')

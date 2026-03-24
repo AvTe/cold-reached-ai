@@ -64,7 +64,19 @@
                     <button type="submit" name="action" value="label" class="bg-white hover:bg-gray-100 text-gray-700 font-bold py-2 px-4 rounded-xl text-sm transition-colors shadow-sm border border-gray-100">Tag Selected</button>
                 </div>
                 
-                <button type="submit" name="action" value="delete" class="bg-white hover:bg-red-50 text-red-600 font-bold py-2 px-5 rounded-2xl text-sm transition-all flex items-center border border-gray-200 hover:border-red-200 shadow-sm">
+                <div class="flex bg-gray-50 border border-gray-200 rounded-2xl p-1">
+                    <select id="export-type" class="bg-transparent border-0 py-2 pl-3 pr-8 text-sm text-gray-700 focus:ring-0 font-semibold cursor-pointer outline-none">
+                        <option value="export_csv">CSV (.csv)</option>
+                        <option value="export_json">JSON (.json)</option>
+                        <option value="export_excel">Excel (.xlsx)</option>
+                        <option value="export_pdf">PDF (.pdf)</option>
+                    </select>
+                    <button type="submit" name="action" onclick="this.value=document.getElementById('export-type').value" class="bg-white hover:bg-blue-50 text-blue-600 font-bold py-2 px-4 rounded-xl text-sm transition-colors shadow-sm border border-gray-100 flex items-center">
+                        <i data-lucide="download" class="w-4 h-4 mr-1"></i> Export 
+                    </button>
+                </div>
+                
+                <button type="submit" name="action" value="delete" class="bg-white hover:bg-red-50 text-red-600 font-bold py-2 px-5 rounded-2xl text-sm transition-all flex items-center border border-gray-200 hover:border-red-200 shadow-sm ml-2">
                     <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i> Delete
                 </button>
             </div>

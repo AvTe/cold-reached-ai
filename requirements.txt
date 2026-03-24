@@ -5,3 +5,5 @@ playwright
 beautifulsoup4
 requests
 g4f
+openpyxl
+reportlab

@@ -1,0 +1,15 @@
+Subject: Quick question for {{ business_name }}
+
+Hi there,
+
+I noticed {{ business_name }} while looking for local businesses in your area. I'm a web specialist and I'd love to help you improve your online presence.
+
+I can help with:
+- Modernizing your website design
+- Improving your search engine ranking
+- Optimizing for mobile users
+
+Are you available for a quick chat next week to discuss some ideas I have for your site?
+
+Best,
+[Your Name]

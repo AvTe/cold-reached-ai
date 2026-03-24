@@ -1,0 +1,76 @@
+<div id="email-card-{{ email.id }}" class="bg-white rounded-3xl shadow-xl shadow-gray-100 border border-gray-100 overflow-hidden mb-12 scroll-mt-8 animate-in fade-in duration-500">
+    <div class="bg-gray-50 px-8 py-5 border-b border-gray-100 flex justify-between items-center">
+        <span class="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center">
+            <i data-lucide="layers" class="w-3 h-3 mr-1"></i>
+            {% if email.status == 'sent' %}Sent{% elif email.status == 'failed' %}Failed{% else %}Draft Lead #{{ email.id }}{% endif %}
+        </span>
+        <span class="px-3 py-1 bg-white text-xs font-bold text-gray-500 rounded-lg border border-gray-200 uppercase">{{ email.business.name }}</span>
+    </div>
+    
+    <div class="p-8">
+        {% if email.status == 'sent' %}
+            <div class="py-12 text-center border border-green-100 rounded-3xl bg-green-50/30">
+                <div class="bg-green-100 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                    <i data-lucide="check" class="w-10 h-10 text-green-600"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">Email Sent Successfully</h3>
+                <p class="text-gray-500 mb-2">{{ email.email }}</p>
+                <div class="text-xs font-mono bg-white border border-gray-200 p-2 rounded inline-block text-gray-500 shadow-sm">Status: {{ email.status }} | Time: {{ email.generated_at.strftime('%H:%M') if email.generated_at }}</div>
+            </div>
+        {% elif email.status == 'failed' %}
+            <div class="py-12 text-center border border-red-100 rounded-3xl bg-red-50/30">
+                <div class="bg-red-100 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="alert-circle" class="w-10 h-10 text-red-600"></i>
+                </div>
+                <h3 class="text-xl font-bold text-red-900 mb-2">Delivery Failed</h3>
+                <p class="text-red-500 mb-6 max-w-sm mx-auto text-sm font-semibold bg-white p-3 rounded-xl border border-red-100 shadow-sm">Error: {{ send_msg if send_msg else "Check Outreach History for details." }}</p>
+                <button hx-post="/send/{{ email.id }}" hx-target="#email-card-{{ email.id }}" hx-swap="outerHTML" hx-ext="json-enc"
+                        class="px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-2xl transition-all shadow-lg flex items-center mx-auto shadow-red-200">
+                    <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i>
+                    Retry Sending
+                </button>
+            </div>
+        {% elif email.subject and email.email_body %}
+            <!-- Subject Area -->
+            <div class="mb-6">
+                <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Subject Line</label>
+                <input type="text" value="{{ email.subject }}" class="w-full px-5 py-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm font-bold text-gray-800 outline-none">
+            </div>
+            
+            <!-- Body Area -->
+            <div class="mb-8">
+                <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Email Body</label>
+                <textarea rows="10" class="w-full px-5 py-4 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-sm leading-relaxed text-gray-700 outline-none">{{ email.email_body }}</textarea>
+            </div>
+            
+            <div class="flex space-x-4">
+                <button hx-post="/send/{{ email.id }}" hx-target="#email-card-{{ email.id }}" hx-swap="outerHTML" hx-ext="json-enc"
+                        class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-green-100 flex items-center justify-center">
+                    <i data-lucide="send" class="w-5 h-5 mr-2"></i>
+                    Approve & Send Now
+                </button>
+                <button class="px-8 py-4 bg-red-50 hover:bg-red-100 text-red-500 font-bold rounded-2xl transition-all">
+                    Skip
+                </button>
+            </div>
+        {% else %}
+            <!-- Generation Trigger -->
+            <div class="py-20 text-center">
+                <div class="bg-indigo-50 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                    <i data-lucide="wand-2" class="w-10 h-10 text-indigo-600"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-2 font-black">AI Ready to Write</h3>
+                <p class="text-gray-500 mb-8 max-w-sm mx-auto text-sm leading-6">Let AI analyze {{ email.business.name }} and craft a high-converting personalized pitch.</p>
+                <button hx-post="/generate-email/{{ email.id }}" hx-target="#email-card-{{ email.id }}" hx-swap="outerHTML"
+                        class="px-10 py-5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-xl shadow-indigo-100 transition-all transform hover:-translate-y-1 flex items-center mx-auto">
+                    <i data-lucide="sparkles" class="w-5 h-5 mr-2"></i>
+                    Generate Draft
+                </button>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>

@@ -209,6 +209,7 @@ def export_general(format_type):
 def bulk_action():
     action = request.form.get('action')
     selected_ids = request.form.getlist('selected_ids')
+    next_url = request.form.get('next')
     
     if action and action.startswith('export_') and not selected_ids:
         # Fallback to export all if attempted via dropdown with no selections
@@ -220,19 +221,19 @@ def bulk_action():
         return generate_export_file(action, businesses)
         
     if action == 'delete':
-        if not selected_ids: return redirect(url_for('businesses'))
+        if not selected_ids: return redirect(next_url or url_for('businesses'))
         for b in businesses:
             Email.query.filter_by(business_id=b.id).delete()
             db.session.delete(b)
         db.session.commit()
     elif action == 'label':
-        if not selected_ids: return redirect(url_for('businesses'))
+        if not selected_ids: return redirect(next_url or url_for('businesses'))
         new_label = request.form.get('bulk_label')
         for b in businesses:
             b.label = new_label
         db.session.commit()
         
-    return redirect(url_for('businesses'))
+    return redirect(next_url or url_for('businesses'))
 
 @app.route('/preview')
 def preview():
